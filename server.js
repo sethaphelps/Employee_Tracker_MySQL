@@ -71,45 +71,84 @@ const viewRoles = async () => {
 };
 
 const viewEmployees = async () => {
-  const [rows, fields] = await db.promise().query("SELECT * FROM employees");
+  const [rows, fields] = await db.promise().query("SELECT * FROM employee");
   console.table(rows);
   handleOptions();
 };
 
+const addEmployee = async () => {
+  const response = await inquirer.prompt([
+    {
+      message: "What is the employee's first name?",
+      type: "input",
+      name: "first_name",
+    },
+    {
+      message: "What is the employee's last name?",
+      type: "input",
+      name: "last_name",
+    },
+    {
+      message: "What is the employee's role id?",
+      type: "input",
+      name: "role_id",
+    },
+    {
+      message: "What is the employee's manager id?",
+      type: "input",
+      name: "manager_id",
+    },
+  ]);
 
-// make this async
-const addEmployee = () => {
-    // instead do const response = await inquirer.prompt([....]);
-    // and then const [rows, fields] = await db.promise().query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?);", [first_name, last_name, role_id, manager_id]);
-    // maybe console.log rows?
-    // and the finally prompt or run your function handleOptions();
-inquirer
-    .prompt([
-      {
-        message: "What is the employee's first name?",
-        type: "input",
-        name: "first_name",
-      },
-      {
-        message: "What is the employee's last name?",
-        type: "input",
-        name: "last_name",
-      },
-      {
-        message: "What is the employee's role id?",
-        type: "input",
-        name: "role_id",
-      },
-      {
-        message: "What is the employee's manager id?",
-        type: "input",
-        name: "manager_id",
-      },
-    ])
-    .then((res) => {
-      db.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?);", [first_name, last_name, role_id, manager_id]);
-      handleOptions();
-    });
+  const { first_name, last_name, role_id, manager_id } = response;
+  const [rows] = await db
+    .promise()
+    .query(
+      "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?);",
+      [first_name, last_name, role_id, manager_id]
+    );
+  console.log("rows are", rows);
+  handleOptions();
+};
+
+const updateEmployee = async () => {
+  const [rows] = await db.promise().query("SELECT * FROM employee");
+  const [updateEmployee] = await db.promise().query("SELECT * FROM role");
+  const newArray = rows.map((employee) => {
+    return {
+      value: employee.id,
+      name: employee.first_name + " " + employee.last_name,
+    };
+  });
+
+  const updatedRole = updateEmployee.map((role) => {
+    return {
+      value: role.id,
+      name: role.title,
+    };
+  });
+  console.log("newArray is", newArray);
+
+  const response = await inquirer.prompt({
+    message: "Which employee would you like to update?",
+    type: "list",
+    name: "employee",
+    choices: newArray,
+  });
+  console.log(response.employee);
+  const newRole = await inquirer.prompt({
+    message: "What is the employee's new role?",
+    type: "list",
+    name: "role",
+    choices: updatedRole,
+  });
+  const updateFunction = async () => await db
+    .promise()
+    .query("UPDATE employee SET role_id = ? WHERE id = ?", [
+      newRole.role,
+      response.employee,
+    ]);
+  updateFunction().then(handleOptions());
 };
 
 handleOptions();
