@@ -16,7 +16,7 @@ The user will run the command 'npm start' in the command line to begin. They the
 
 Attached is a link to the walkthrough.
 
-[Walkthrough Link](https://watch.screencastify.com/v/rthxn3Ew4PdelVCt20TG)
+[Walkthrough Link](https://watch.screencastify.com/v/qgLLs3zrTZ26SIzkqu1a)
 
 ## Respository 
 

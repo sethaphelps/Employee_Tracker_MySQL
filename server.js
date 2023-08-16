@@ -28,6 +28,7 @@ function handleOptions() {
           "Add a Role",
           "Add an Employee",
           "Update an Employee Role",
+          "Quit",
         ],
       },
     ])
@@ -54,6 +55,8 @@ function handleOptions() {
         case "Update an Employee Role":
           updateEmployee();
           break;
+        case "Quit":
+          db.end();
       }
     });
 }
@@ -67,14 +70,22 @@ const viewDepartments = async () => {
 
 // When View Roles is selected, this function allows the user to view all roles
 const viewRoles = async () => {
-  const [rows, fields] = await db.promise().query("SELECT * FROM role");
+  const [rows] = await db
+    .promise()
+    .query(
+      "SELECT * FROM role LEFT JOIN department ON role.department_id=department.id"
+    );
   console.table(rows);
   handleOptions();
 };
 
 // When View Employees is selected, this function allows the user to view all employees
 const viewEmployees = async () => {
-  const [rows, fields] = await db.promise().query("SELECT * FROM employee");
+  const [rows] = await db
+    .promise()
+    .query(
+      "SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department_name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager FROM employee LEFT JOIN role on employee.role_id = role.id LEFT JOIN department on role.department_id = department.id LEFT JOIN employee manager on manager.id = employee.manager_id;"
+    );
   console.table(rows);
   handleOptions();
 };
@@ -146,6 +157,20 @@ const addRole = async () => {
 
 // Allows user to add an employee
 const addEmployee = async () => {
+  const [newrole] = await db.promise().query("SELECT * FROM role");
+  const [newManager] = await db.promise().query("SELECT * FROM employee");
+  const roles = newrole.map((role) => {
+    return {
+      value: role.id,
+      name: role.title,
+    };
+  });
+  const managers = newManager.map((employee) => {
+    return {
+      value: employee.id,
+      name: employee.first_name + " " + employee.last_name,
+    };
+  });
   const response = await inquirer.prompt([
     {
       message: "What is the employee's first name?",
@@ -158,23 +183,31 @@ const addEmployee = async () => {
       name: "last_name",
     },
     {
-      message: "What is the employee's role id?",
-      type: "input",
-      name: "role_id",
+      message: "What is the employee's role?",
+      type: "list",
+      name: "roles",
+      choices: roles,
     },
     {
-      message: "What is the employee's manager id?",
-      type: "input",
+      message: "Who is the employee's manager?",
+      type: "list",
       name: "manager_id",
+      choices: managers,
     },
   ]);
 
-  const { first_name, last_name, role_id, manager_id } = response;
+  // const { first_name, last_name, role_id, manager_id } = response;
+
   const [rows] = await db
     .promise()
     .query(
       "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?);",
-      [first_name, last_name, role_id, manager_id]
+      [
+        response.first_name,
+        response.last_name,
+        response.roles,
+        response.manager_id,
+      ]
     );
   handleOptions();
 };
